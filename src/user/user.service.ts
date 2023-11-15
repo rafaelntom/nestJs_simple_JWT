@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { Injectable } from '@nestjs/common';
+import * as bycrpt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 
@@ -7,7 +8,22 @@ import { CreateUserDto } from './dto/create-user.dto';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  async hashInfo(password: string) {
+    const hashedPassword = await bycrpt.hash(password, 10);
+    return hashedPassword;
+  }
+
+  async create(createUserDto: CreateUserDto) {
+    const user = {
+      ...createUserDto,
+      password: await this.hashInfo(createUserDto.password),
+    };
+
+    const newUser = await this.prisma.user.create({ data: user });
+
+    return {
+      ...newUser,
+      password: undefined,
+    };
   }
 }
