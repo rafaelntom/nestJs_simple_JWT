@@ -1,12 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UserService } from 'src/user/user.service';
+import * as bycrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  validateUser(email: string, password: string) {
-    throw new Error('Method not implemented.');
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly userService: UserService,
+  ) {}
+
+  async validateUser(email: string, password: string) {
+    const user = await this.userService.findByEmail(email);
+
+    if (user) {
+      const isPasswordValid = await bycrypt.compare(password, user.password);
+
+      if (isPasswordValid) {
+        return {
+          ...user,
+          password: undefined,
+        };
+      }
+    }
+
+    throw new Error('You have entered an invalid username or password');
   }
-  constructor(private readonly prisma: PrismaService) {}
 
   async login() {
     return await this.prisma.user.findUnique({
