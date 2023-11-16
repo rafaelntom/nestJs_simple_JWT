@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import * as bycrpt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -14,6 +14,14 @@ export class UserService {
   }
 
   async create(createUserDto: CreateUserDto) {
+    const existingUser = await this.findByEmail(createUserDto.email);
+    if (existingUser) {
+      throw new HttpException(
+        'Email is already registered',
+        HttpStatus.CONFLICT,
+      );
+    }
+
     const user = {
       ...createUserDto,
       password: await this.hashInfo(createUserDto.password),
